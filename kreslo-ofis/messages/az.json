@@ -1,0 +1,17 @@
+{
+  "nav": {
+    "home": "Ana Səhifə",
+    "categories": "Kateqoriyalar",
+    "deals": "Endirimler",
+    "contact": "Əlaqə"
+  },
+  "product": {
+    "add_to_cart": "Səbətə əlavə et",
+    "out_of_stock": "Stokda yoxdur",
+    "sale_ends": "Endirim bitmək üzrədir"
+  },
+  "cart": {
+    "order_via_whatsapp": "WhatsApp ilə sifariş ver",
+    "message_template": "Salam! Sifariş vermək istəyirəm: {items}. Ümumi: {total} AZN. Stokda varmı?"
+  }
+}
