@@ -1,0 +1,17 @@
+{
+  "nav": {
+    "home": "Главная",
+    "categories": "Категории",
+    "deals": "Скидки",
+    "contact": "Контакты"
+  },
+  "product": {
+    "add_to_cart": "В корзину",
+    "out_of_stock": "Нет в наличии",
+    "sale_ends": "Скидка заканчивается"
+  },
+  "cart": {
+    "order_via_whatsapp": "Заказать через WhatsApp",
+    "message_template": "Здравствуйте! Хочу заказать: {items}. Итого: {total} AZN. Есть в наличии?"
+  }
+}
