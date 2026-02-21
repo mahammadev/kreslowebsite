@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "home": "Home",
+    "categories": "Categories",
+    "deals": "Deals",
+    "contact": "Contact"
+  },
+  "product": {
+    "add_to_cart": "Add to Cart",
+    "out_of_stock": "Out of Stock",
+    "sale_ends": "Sale ends soon"
+  },
+  "cart": {
+    "order_via_whatsapp": "Order via WhatsApp",
+    "message_template": "Hello! I'd like to order: {items}. Total: {total} AZN. Are these in stock?"
+  },
+  "reels": {
+    "view_more": "View More",
+    "items": [
+      {
+        "title": "Peak Comfort",
+        "subtitle": "Transform your workday with ergonomic excellence.",
+        "cta": "Explore"
+      },
+      {
+        "title": "Minimalist Design",
+        "subtitle": "Sleek and functional seating for modern offices.",
+        "cta": "View Collection"
+      },
+      {
+        "title": "Executive Choice",
+        "subtitle": "Premium leather chairs that define your status.",
+        "cta": "Shop Now"
+      }
+    ]
+  },
+  "storefront": {
+    "popular_products_title": "Best Sellers",
+    "view_all_products": "Shop All Products",
+    "featured_categories_title": "Elevate Your Space",
+    "featured_categories_subtitle": "Uncompromising comfort tailored with precision quality and premium ergonomics.",
+    "best_seller": "Best Seller",
+    "latest_drop": "latest drop",
+    "tagline": "Refined. Minimal. Never boring.",
+    "tagline_1": "Furniture that speaks softly, but stands out loud.",
+    "tagline_2": "Clean lines, crafted with wit.",
+    "tagline_3": "Elegance with a wink — style first",
+    "buy": "Buy",
+    "view_product": "View Product",
+    "filter": "Filter",
+    "shop": "Shop",
+    "results": "{count} results",
+    "no_products": "No products found",
+    "all_rights": "All rights reserved"
+  },
+  "footer": {
+    "products": "Products",
+    "categories": "Categories",
+    "contact": "Contact",
+    "home": "Home",
+    "language": "Language",
+    "info": "Info"
+  }
+}

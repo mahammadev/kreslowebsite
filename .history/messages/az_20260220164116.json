@@ -1,0 +1,37 @@
+{
+  "nav": {
+    "home": "Ana Səhifə",
+    "categories": "Kateqoriyalar",
+    "deals": "Endirimler",
+    "contact": "Əlaqə"
+  },
+  "product": {
+    "add_to_cart": "Səbətə əlavə et",
+    "out_of_stock": "Stokda yoxdur",
+    "sale_ends": "Endirim bitmək üzrədir"
+  },
+  "cart": {
+    "order_via_whatsapp": "WhatsApp ilə sifariş ver",
+    "message_template": "Salam! Sifariş vermək istəyirəm: {items}. Ümumi: {total} AZN. Stokda varmı?"
+  },
+  "reels": {
+    "view_more": "Daha çox",
+    "items": [
+      {
+        "title": "Zirvədə Rahatlıq",
+        "subtitle": "İş gününüzü erqonomik mükəmməlliklə dəyişdirin.",
+        "cta": "Kəşf et"
+      },
+      {
+        "title": "Minimalist Dizayn",
+        "subtitle": "Müasir ofislər üçün zərif və funksional oturacaqlar.",
+        "cta": "Kolleksiyaya bax"
+      },
+      {
+        "title": "İcraçı Seçimi",
+        "subtitle": "Statusunuzu vurğulayan premium dəri kreslolar.",
+        "cta": "İndi al"
+      }
+    ]
+  }
+}

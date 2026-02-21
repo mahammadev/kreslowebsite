@@ -1,0 +1,481 @@
+'use client';
+
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Plus, Pencil, Loader2, Wand2, X } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import { compressForUpload } from '@/lib/image-compress';
+import Image from 'next/image';
+import { translateText } from '@/lib/actions/translate';
+
+const formSchema = z.object({
+  name_az: z.string().min(1, 'Name (AZ) is required'),
+  name_ru: z.string().min(1, 'Name (RU) is required'),
+  name_en: z.string().min(1, 'Name (EN) is required'),
+  slug: z.string().min(1, 'Slug is required'),
+  description_az: z.string().optional(),
+  description_ru: z.string().optional(),
+  description_en: z.string().optional(),
+  category_id: z.string().optional(),
+  price: z.coerce.number().min(0, 'Price must be positive'),
+  discount_price: z.string().optional(),
+  image_url: z.string().min(1, 'Image is required'),
+  extra_images: z.array(z.string()).default([]),
+  is_active: z.boolean(),
+  in_stock: z.boolean(),
+  price_negotiable: z.boolean().default(false),
+});
+
+interface ProductFormProps {
+  mode: 'create' | 'edit';
+  product?: any;
+  categories: any[];
+}
+
+export function ProductForm({ mode, product, categories }: ProductFormProps) {
+  const [open, setOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isTranslatingName, setIsTranslatingName] = useState(false);
+  const [isTranslatingDesc, setIsTranslatingDesc] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name_az: product?.name_az || '',
+      name_ru: product?.name_ru || '',
+      name_en: product?.name_en || '',
+      slug: product?.slug || '',
+      description_az: product?.description_az || '',
+      description_ru: product?.description_ru || '',
+      description_en: product?.description_en || '',
+      category_id: product?.category_id || undefined,
+      price: product?.price || 0,
+      discount_price: product?.discount_price ? String(product.discount_price) : '',
+      image_url: product?.image_url || '',
+      extra_images: product?.extra_images || [],
+      is_active: product?.is_active ?? true,
+      in_stock: product?.in_stock ?? true,
+      price_negotiable: product?.price_negotiable ?? false,
+    },
+  });
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setUploading(true);
+    try {
+      const file = e.target.files[0];
+      const compressed = await compressForUpload(file);
+      const filename = `products/${Date.now()}-${compressed.name}`;
+
+      const { error } = await supabase.storage
+        .from('product-images')
+        .upload(filename, compressed, { upsert: true });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filename);
+
+      form.setValue('image_url', publicUrl);
+    } catch (error: any) {
+      console.error('Upload failed:', error.message);
+      alert('Upload failed: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleExtraImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setUploading(true);
+    try {
+      const files = Array.from(e.target.files);
+      const newUrls = [...form.getValues('extra_images')];
+
+      for (const file of files) {
+        const compressed = await compressForUpload(file);
+        const filename = `products/${Date.now()}-${compressed.name}`;
+
+        const { error } = await supabase.storage
+          .from('product-images')
+          .upload(filename, compressed, { upsert: true });
+
+        if (error) throw error;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filename);
+
+        newUrls.push(publicUrl);
+      }
+
+      form.setValue('extra_images', newUrls, { shouldDirty: true });
+    } catch (error: any) {
+      console.error('Extra Image Upload failed:', error.message);
+      alert('Extra Image Upload failed: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeExtraImage = (indexToRemove: number) => {
+    const currentImages = form.getValues('extra_images');
+    form.setValue(
+      'extra_images',
+      currentImages.filter((_, i) => i !== indexToRemove),
+      { shouldDirty: true }
+    );
+  };
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const payload = {
+      ...values,
+      id: mode === 'edit' ? product.id : undefined,
+      discount_price: values.discount_price ? Number(values.discount_price) : null,
+    };
+
+    if (mode === 'create') {
+      delete (payload as any).id;
+    }
+
+    const { error } = await supabase
+      .from('products')
+      .upsert(payload);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    if (mode === 'create') {
+      form.reset();
+    }
+    setOpen(false);
+    router.refresh();
+  }
+
+  async function handleDelete() {
+    if (!product?.id) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', product.id);
+
+      if (error) throw error;
+
+      setOpen(false);
+      router.refresh();
+    } catch (error: any) {
+      console.error('Delete failed:', error.message);
+      alert('Delete failed: ' + error.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  async function handleTranslateName() {
+    const textAz = form.getValues('name_az');
+    if (!textAz) return;
+
+    setIsTranslatingName(true);
+    try {
+      const [ru, en] = await Promise.all([
+        translateText(textAz, 'az', 'ru'),
+        translateText(textAz, 'az', 'en'),
+      ]);
+
+      if (ru) form.setValue('name_ru', ru);
+      if (en) form.setValue('name_en', en);
+    } catch (e) {
+      console.error('Name Translation failed', e);
+    } finally {
+      setIsTranslatingName(false);
+    }
+  }
+
+  async function handleTranslateDesc() {
+    const textAz = form.getValues('description_az');
+    if (!textAz) return;
+
+    setIsTranslatingDesc(true);
+    try {
+      const [ru, en] = await Promise.all([
+        translateText(textAz, 'az', 'ru'),
+        translateText(textAz, 'az', 'en'),
+      ]);
+
+      if (ru) form.setValue('description_ru', ru);
+      if (en) form.setValue('description_en', en);
+    } catch (e) {
+      console.error('Desc Translation failed', e);
+    } finally {
+      setIsTranslatingDesc(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {mode === 'create' ? (
+          <Button><Plus className="mr-2 h-4 w-4" /> Add Product</Button>
+        ) : (
+          <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="overflow-y-auto w-full sm:max-w-4xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle>{mode === 'create' ? 'Add Product' : 'Edit Product'}</DialogTitle>
+          <DialogDescription>
+            {mode === 'create' ? 'Create a new product.' : 'Make changes to the product.'}
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 py-4">
+
+            <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+              <FormField control={form.control} name="name_az" render={({ field }) => (
+                <FormItem><FormLabel>AZ (Source)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleTranslateName}
+                disabled={isTranslatingName}
+                title="Auto-translate to RU and EN"
+              >
+                {isTranslatingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4 text-primary" />}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="name_ru" render={({ field }) => (
+                <FormItem><FormLabel>RU</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="name_en" render={({ field }) => (
+                <FormItem><FormLabel>EN</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="category_id" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name_az}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="slug" render={({ field }) => (
+                <FormItem><FormLabel>Slug</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+            </div>
+
+            <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+              <div className="space-y-2 w-full">
+                <FormLabel>Description AZ (Source)</FormLabel>
+                <FormField control={form.control} name="description_az" render={({ field }) => (
+                  <FormItem><FormControl><Textarea placeholder="AZ Description" className="h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleTranslateDesc}
+                disabled={isTranslatingDesc}
+                className="mb-2"
+                title="Auto-translate to RU and EN"
+              >
+                {isTranslatingDesc ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4 text-primary" />}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <FormLabel>Description (RU)</FormLabel>
+                <FormField control={form.control} name="description_ru" render={({ field }) => (
+                  <FormItem><FormControl><Textarea placeholder="RU Description" className="h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+              <div className="space-y-2">
+                <FormLabel>Description (EN)</FormLabel>
+                <FormField control={form.control} name="description_en" render={({ field }) => (
+                  <FormItem><FormControl><Textarea placeholder="EN Description" className="h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="price" render={({ field }) => (
+                <FormItem><FormLabel>Price (AZN)</FormLabel><FormControl><Input type="number" {...field} disabled={form.watch('price_negotiable')} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="discount_price" render={({ field }) => (
+                <FormItem><FormLabel>Discount Price</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} disabled={form.watch('price_negotiable')} /></FormControl><FormMessage /></FormItem>
+              )} />
+            </div>
+
+            <div className="flex gap-6 pt-2">
+              <FormField control={form.control} name="price_negotiable" render={({ field }) => (
+                <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-2 flex-1">
+                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                  <FormLabel className="font-medium cursor-pointer">Price Negotiable / Call for Price</FormLabel>
+                </FormItem>
+              )} />
+            </div>
+
+            <FormField control={form.control} name="image_url" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Primary Product Image</FormLabel>
+                <div className="flex flex-col gap-4 border border-dashed rounded-md p-4 bg-muted/20">
+                  {field.value && (
+                    <div className="relative h-48 max-w-sm w-full overflow-hidden rounded-md border shadow-sm">
+                      <Image src={field.value} alt="Product" fill className="object-cover" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      className="cursor-pointer max-w-sm bg-background"
+                    />
+                    {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  </div>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="extra_images" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Extra Images (Gallery)</FormLabel>
+                <div className="flex flex-col gap-4 border border-dashed rounded-md p-4 bg-muted/20">
+                  {field.value && field.value.length > 0 && (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                      {field.value.map((url, index) => (
+                        <div key={index} className="group relative aspect-square overflow-hidden rounded-md border shadow-sm">
+                          <Image src={url} alt={`Extra image ${index + 1}`} fill className="object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeExtraImage(index)}
+                            className="absolute top-1 right-1 p-1 bg-background/80 hover:bg-destructive hover:text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleExtraImagesUpload}
+                      disabled={uploading}
+                      className="cursor-pointer max-w-sm bg-background"
+                    />
+                  </div>
+                </div>
+                <FormDescription>Upload multiple secondary images to show in the product gallery.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <div className="flex gap-6 pt-2">
+              <FormField control={form.control} name="is_active" render={({ field }) => (
+                <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-2 flex-1">
+                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                  <FormLabel className="font-medium cursor-pointer">Active (Visible)</FormLabel>
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="in_stock" render={({ field }) => (
+                <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-2 flex-1">
+                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                  <FormLabel className="font-medium cursor-pointer">In Stock</FormLabel>
+                </FormItem>
+              )} />
+            </div>
+
+            <DialogFooter className="flex-row justify-between sm:justify-between pt-6 border-t mt-6">
+              {mode === 'edit' ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={isDeleting || uploading}
+                >
+                  {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {confirmDelete ? 'Confirm Delete' : 'Delete'}
+                </Button>
+              ) : (
+                <div /> // spacer
+              )}
+              <Button type="submit" disabled={uploading || isDeleting}>
+                {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Save Product
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}

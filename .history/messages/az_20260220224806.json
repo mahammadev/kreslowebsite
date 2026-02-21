@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "home": "Ana Səhifə",
+    "categories": "Kateqoriyalar",
+    "deals": "Endirimler",
+    "contact": "Əlaqə"
+  },
+  "product": {
+    "add_to_cart": "Səbətə əlavə et",
+    "out_of_stock": "Stokda yoxdur",
+    "sale_ends": "Endirim bitmək üzrədir"
+  },
+  "cart": {
+    "order_via_whatsapp": "WhatsApp ilə sifariş ver",
+    "message_template": "Salam! Sifariş vermək istəyirəm: {items}. Ümumi: {total} AZN. Stokda varmı?"
+  },
+  "reels": {
+    "view_more": "Daha çox",
+    "items": [
+      {
+        "title": "Zirvədə Rahatlıq",
+        "subtitle": "İş gününüzü erqonomik mükəmməlliklə dəyişdirin.",
+        "cta": "Kəşf et"
+      },
+      {
+        "title": "Minimalist Dizayn",
+        "subtitle": "Müasir ofislər üçün zərif və funksional oturacaqlar.",
+        "cta": "Kolleksiyaya bax"
+      },
+      {
+        "title": "İcraçı Seçimi",
+        "subtitle": "Statusunuzu vurğulayan premium dəri kreslolar.",
+        "cta": "İndi al"
+      }
+    ]
+  },
+  "storefront": {
+    "popular_products_title": "Ən çox satılanlar",
+    "view_all_products": "Bütün məhsullara bax",
+    "featured_categories_title": "Məkanınızı gözəlləşdirin",
+    "featured_categories_subtitle": "Xüsusi hazırlanmış keyfiyyət və premium erqonomika ilə bənzərsiz rahatlıq.",
+    "best_seller": "Ən çox satılan",
+    "latest_drop": "yeni gələnlər",
+    "tagline": "Zərif. Minimal. Heç vaxt darıxdırıcı deyil.",
+    "tagline_1": "Sakit danışan, amma diqqəti çəkən mebel.",
+    "tagline_2": "Təmiz xətlər, ustalıqla hazırlanmış.",
+    "tagline_3": "Zəriflik və üslub — hər şeydən əvvəl",
+    "buy": "Al",
+    "view_product": "Məhsula bax",
+    "filter": "Filtr",
+    "shop": "Mağaza",
+    "results": "{count} nəticə",
+    "no_products": "Məhsul tapılmadı",
+    "all_rights": "Bütün hüquqlar qorunur"
+  },
+  "footer": {
+    "products": "Məhsullar",
+    "categories": "Kateqoriyalar",
+    "contact": "Əlaqə",
+    "home": "Ana Səhifə",
+    "language": "Dil",
+    "info": "Məlumat"
+  }
+}
